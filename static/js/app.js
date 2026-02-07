@@ -30,7 +30,12 @@ const elements = {
     cropRegion: document.getElementById('crop-region'),
     emptyState: document.getElementById('empty-state'),
     toast: document.getElementById('toast'),
-    loading: document.getElementById('loading')
+    loading: document.getElementById('loading'),
+    confirmModal: document.getElementById('confirm-modal'),
+    modalTitle: document.getElementById('modal-title'),
+    modalMessage: document.getElementById('modal-message'),
+    modalBtnCancel: document.getElementById('modal-btn-cancel'),
+    modalBtnConfirm: document.getElementById('modal-btn-confirm')
 };
 
 // Aspect ratio presets (width:height)
@@ -86,12 +91,12 @@ async function displayImage(index) {
 
     // Fetch and display image info
     try {
-        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/info`);
+        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/info?t=${Date.now()}`);
         const info = await response.json();
         state.imageInfo = info;
-        elements.dimensions.textContent = `Original: ${info.width} × ${info.height}`;
+        elements.dimensions.textContent = `Dimensions: ${info.width} × ${info.height}`;
     } catch (error) {
-        elements.dimensions.textContent = 'Original: -- × --';
+        elements.dimensions.textContent = 'Dimensions: -- × --';
     }
 
     // Exit crop mode when changing images
@@ -127,8 +132,8 @@ async function scaleImage(width, height) {
 
         if (result.success) {
             showToast(`Scaled to ${width}×${height}`, 'success');
-            // Refresh current image
-            await refreshCurrentImage();
+            // Refresh current image, possibly jumping to new file
+            await refreshCurrentImage(result.filename);
         } else {
             showToast(result.error || 'Failed to scale', 'error');
         }
@@ -247,7 +252,7 @@ async function applyCrop() {
         if (result.success) {
             showToast('Cropped successfully', 'success');
             exitCropMode();
-            await refreshCurrentImage();
+            await refreshCurrentImage(result.filename);
         } else {
             showToast(result.error || 'Failed to crop', 'error');
         }
@@ -263,7 +268,12 @@ async function applyCrop() {
 async function trashImage() {
     const filename = state.images[state.currentIndex];
 
-    if (!confirm(`Move "${filename}" to trash?`)) return;
+    const confirmed = await showModal(
+        'Delete Image',
+        `Are you sure you want to move "${filename}" to trash? This can be undone if a trash directory is configured.`
+    );
+
+    if (!confirmed) return;
 
     showLoading(true);
 
@@ -299,8 +309,16 @@ async function trashImage() {
 }
 
 // Refresh current image after edit
-async function refreshCurrentImage() {
+async function refreshCurrentImage(newFilename = null) {
     await loadImageList();
+
+    if (newFilename) {
+        const index = state.images.indexOf(newFilename);
+        if (index !== -1) {
+            state.currentIndex = index;
+        }
+    }
+
     if (state.currentIndex < state.images.length) {
         displayImage(state.currentIndex);
     }
@@ -323,6 +341,34 @@ function showToast(message, type = 'info') {
 
 function showLoading(show) {
     elements.loading.classList.toggle('hidden', !show);
+}
+
+function showModal(title, message) {
+    return new Promise((resolve) => {
+        elements.modalTitle.textContent = title;
+        elements.modalMessage.textContent = message;
+        elements.confirmModal.classList.remove('hidden');
+
+        const onCancel = () => {
+            elements.confirmModal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        };
+
+        const onConfirm = () => {
+            elements.confirmModal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        };
+
+        const cleanup = () => {
+            elements.modalBtnCancel.removeEventListener('click', onCancel);
+            elements.modalBtnConfirm.removeEventListener('click', onConfirm);
+        };
+
+        elements.modalBtnCancel.addEventListener('click', onCancel);
+        elements.modalBtnConfirm.addEventListener('click', onConfirm);
+    });
 }
 
 // Event Listeners
