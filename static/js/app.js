@@ -12,7 +12,8 @@ const state = {
     imageInfo: null,
     isDragging: false,
     isResizing: false,
-    dragStart: { x: 0, y: 0 }
+    dragStart: { x: 0, y: 0 },
+    selectedScales: []
 };
 
 // DOM Elements
@@ -38,7 +39,10 @@ const elements = {
     modalBtnCancel: document.getElementById('modal-btn-cancel'),
     modalBtnConfirm: document.getElementById('modal-btn-confirm'),
     scaleButtons: document.getElementById('scale-buttons'),
-    resizeHandle: document.querySelector('.resize-handle')
+    resizeHandle: document.querySelector('.resize-handle'),
+    unifiedBtnArea: document.getElementById('unified-actions'),
+    btnApplyAll: document.getElementById('btn-apply-all'),
+    btnCancelAll: document.getElementById('btn-cancel-all')
 };
 
 // Aspect ratio presets (width:height)
@@ -107,8 +111,30 @@ async function displayImage(index) {
         elements.dimensions.textContent = 'Dimensions: -- × --';
     }
 
-    // Exit crop mode when changing images
+    // Exit crop/scale modes when changing images
     exitCropMode();
+    clearScaleSelection();
+
+    // Smart Ratio Detection
+    if (state.imageInfo) {
+        const detectedRatio = detectImageRatio(state.imageInfo.width, state.imageInfo.height);
+        if (detectedRatio) {
+            state.cropRatio = RATIOS[detectedRatio];
+            updateScaleButtons();
+        }
+    }
+}
+
+function detectImageRatio(width, height) {
+    const currentRatio = width / height;
+    const tolerance = 0.02; // Allow small rounding differences
+
+    for (const [key, ratio] of Object.entries(RATIOS)) {
+        if (Math.abs(currentRatio - (ratio.w / ratio.h)) < tolerance) {
+            return key;
+        }
+    }
+    return null;
 }
 
 // Navigation
@@ -125,32 +151,111 @@ function navigateNext() {
 }
 
 // Scale image
-async function scaleImage(width, height) {
-    const filename = state.images[state.currentIndex];
-    showLoading(true);
-
+async function scaleImage(width, height, targetFilename = null) {
+    const filename = targetFilename || state.images[state.currentIndex];
     try {
         const response = await fetch(`/api/image/${encodeURIComponent(filename)}/scale`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ width, height })
         });
-
         const result = await response.json();
-
-        if (result.success) {
-            showToast(`Scaled to ${width}×${height}`, 'success');
-            // Refresh current image, possibly jumping to new file
-            await refreshCurrentImage(result.filename);
-        } else {
-            showToast(result.error || 'Failed to scale', 'error');
-        }
+        return result.success ? result.filename : null;
     } catch (error) {
-        showToast('Failed to scale image', 'error');
         console.error('Scale error:', error);
-    } finally {
-        showLoading(false);
+        return null;
     }
+}
+
+async function applyUnifiedActions() {
+    if (!state.cropMode && state.selectedScales.length === 0) return;
+
+    showLoading(true);
+    let lastFilename = state.images[state.currentIndex];
+
+    // 1. Perform Crop first if active
+    if (state.cropMode) {
+        const cropResult = await executeCrop();
+        if (cropResult) {
+            lastFilename = cropResult;
+        } else {
+            showLoading(false);
+            return; // Stop if crop failed
+        }
+    }
+
+    // 2. Perform Batch Scaling on the (potentially newly cropped) image
+    if (state.selectedScales.length > 0) {
+        let successCount = 0;
+        for (const scale of state.selectedScales) {
+            const result = await scaleImage(scale.w, scale.h, lastFilename);
+            if (result) {
+                lastFilename = result;
+                successCount++;
+            }
+        }
+        showToast(`Processed ${successCount} version(s)`, 'success');
+    } else if (state.cropMode) {
+        showToast('Cropped successfully', 'success');
+    }
+
+    exitCropMode();
+    clearScaleSelection();
+    await refreshCurrentImage(lastFilename);
+    showLoading(false);
+}
+
+async function executeCrop() {
+    const filename = state.images[state.currentIndex];
+    const imgRect = elements.mainImage.getBoundingClientRect();
+    const containerRect = elements.imageContainer.getBoundingClientRect();
+    const offsetX = imgRect.left - containerRect.left;
+    const offsetY = imgRect.top - containerRect.top;
+    const scaleX = state.imageInfo.width / imgRect.width;
+    const scaleY = state.imageInfo.height / imgRect.height;
+
+    const body = {
+        x: Math.round((state.cropRegion.x - offsetX) * scaleX),
+        y: Math.round((state.cropRegion.y - offsetY) * scaleY),
+        width: Math.round(state.cropRegion.width * scaleX),
+        height: Math.round(state.cropRegion.height * scaleY)
+    };
+
+    try {
+        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/crop`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const result = await response.json();
+        return result.success ? result.filename : null;
+    } catch (error) {
+        console.error('Crop error:', error);
+        return null;
+    }
+}
+
+function toggleScale(w, h, btn) {
+    const index = state.selectedScales.findIndex(s => s.w === w && s.h === h);
+    if (index === -1) {
+        state.selectedScales.push({ w, h });
+        btn.classList.add('selected');
+    } else {
+        state.selectedScales.splice(index, 1);
+        btn.classList.remove('selected');
+    }
+    updateActionUI();
+}
+
+function clearScaleSelection() {
+    state.selectedScales = [];
+    document.querySelectorAll('.scale-btn').forEach(btn => btn.classList.remove('selected'));
+    updateActionUI();
+}
+
+function updateActionUI() {
+    const hasActiveStates = state.cropMode || state.selectedScales.length > 0;
+    elements.unifiedBtnArea.classList.toggle('hidden', !hasActiveStates);
 }
 
 // Crop functions
@@ -195,8 +300,6 @@ function startCrop(ratioKey) {
     // Update UI
     updateCropRegionDisplay();
     elements.cropOverlay.classList.remove('hidden');
-    elements.btnApplyCrop.classList.remove('hidden');
-    elements.btnCancelCrop.classList.remove('hidden');
 
     // Highlight active ratio button
     document.querySelectorAll('.crop-btn').forEach(btn => {
@@ -204,6 +307,7 @@ function startCrop(ratioKey) {
     });
 
     updateScaleButtons();
+    updateActionUI();
 }
 
 function updateScaleButtons() {
@@ -218,7 +322,7 @@ function updateScaleButtons() {
             btn.dataset.width = size;
             btn.dataset.height = size;
             btn.textContent = `${size}²`;
-            btn.onclick = () => scaleImage(size, size);
+            btn.onclick = () => toggleScale(size, size, btn);
             elements.scaleButtons.appendChild(btn);
         });
     } else {
@@ -230,10 +334,18 @@ function updateScaleButtons() {
             btn.dataset.width = w;
             btn.dataset.height = h;
             btn.textContent = `${w}×${h}`;
-            btn.onclick = () => scaleImage(w, h);
+            btn.onclick = () => toggleScale(w, h, btn);
             elements.scaleButtons.appendChild(btn);
         });
     }
+    // Restore selected states if buttons were re-rendered
+    document.querySelectorAll('.scale-btn').forEach(btn => {
+        const w = parseInt(btn.dataset.width);
+        const h = parseInt(btn.dataset.height);
+        if (state.selectedScales.some(s => s.w === w && s.h === h)) {
+            btn.classList.add('selected');
+        }
+    });
 }
 
 function updateCropRegionDisplay() {
@@ -248,61 +360,13 @@ function exitCropMode() {
     state.cropMode = false;
     state.cropRatio = null;
     elements.cropOverlay.classList.add('hidden');
-    elements.btnApplyCrop.classList.add('hidden');
-    elements.btnCancelCrop.classList.add('hidden');
     document.querySelectorAll('.crop-btn').forEach(btn => btn.classList.remove('active'));
     updateScaleButtons();
+    updateActionUI();
 }
 
 async function applyCrop() {
-    if (!state.cropMode || !state.imageInfo) return;
-
-    const filename = state.images[state.currentIndex];
-    const imgRect = elements.mainImage.getBoundingClientRect();
-    const containerRect = elements.imageContainer.getBoundingClientRect();
-
-    // Calculate image offset within container
-    const offsetX = imgRect.left - containerRect.left;
-    const offsetY = imgRect.top - containerRect.top;
-
-    // Convert display coordinates to image coordinates
-    const scaleX = state.imageInfo.width / imgRect.width;
-    const scaleY = state.imageInfo.height / imgRect.height;
-
-    const cropX = Math.round((state.cropRegion.x - offsetX) * scaleX);
-    const cropY = Math.round((state.cropRegion.y - offsetY) * scaleY);
-    const cropWidth = Math.round(state.cropRegion.width * scaleX);
-    const cropHeight = Math.round(state.cropRegion.height * scaleY);
-
-    showLoading(true);
-
-    try {
-        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/crop`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                x: cropX,
-                y: cropY,
-                width: cropWidth,
-                height: cropHeight
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showToast('Cropped successfully', 'success');
-            exitCropMode();
-            await refreshCurrentImage(result.filename);
-        } else {
-            showToast(result.error || 'Failed to crop', 'error');
-        }
-    } catch (error) {
-        showToast('Failed to crop image', 'error');
-        console.error('Crop error:', error);
-    } finally {
-        showLoading(false);
-    }
+    // Handled by applyUnifiedActions
 }
 
 // Trash image
@@ -418,15 +482,6 @@ function setupEventListeners() {
     elements.btnPrev.addEventListener('click', navigatePrev);
     elements.btnNext.addEventListener('click', navigateNext);
 
-    // Scale buttons
-    document.querySelectorAll('.scale-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const width = parseInt(btn.dataset.width);
-            const height = parseInt(btn.dataset.height);
-            scaleImage(width, height);
-        });
-    });
-
     // Crop buttons
     document.querySelectorAll('.crop-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -434,9 +489,12 @@ function setupEventListeners() {
         });
     });
 
-    // Crop actions
-    elements.btnApplyCrop.addEventListener('click', applyCrop);
-    elements.btnCancelCrop.addEventListener('click', exitCropMode);
+    // Unified actions
+    elements.btnApplyAll.addEventListener('click', applyUnifiedActions);
+    elements.btnCancelAll.addEventListener('click', () => {
+        exitCropMode();
+        clearScaleSelection();
+    });
 
     // Trash button
     if (elements.btnTrash) {

@@ -306,13 +306,30 @@ main {
     gap: 0.5rem;
 }
 
-#btn-apply-crop {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
+#btn-apply-all {
     background: var(--success);
-    border: none;
-    border-radius: 6px;
+    color: white;
+    height: 40px;
+    padding: 0 1.5rem;
+    font-size: 0.9rem;
     font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-apply-all:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(63, 185, 80, 0.3);
+}
+
+#btn-apply-all:active {
+    transform: translateY(0);
 }
 
 
@@ -325,6 +342,11 @@ main {
     justify-content: center;
     font-size: 0.9rem;
     border-radius: 6px;
+}
+
+.scale-btn.selected {
+    background: var(--accent) !important;
+    color: white !important;
 }
 
 .action-btn:hover {
