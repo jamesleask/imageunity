@@ -55,10 +55,25 @@ header h1 {
 }
 
 .badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    cursor: help;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+    filter: brightness(1.2);
+}
+
+.badge svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.5;
 }
 
 .badge-enabled {
@@ -362,7 +377,9 @@ main {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Modal Overlay */
@@ -396,6 +413,7 @@ main {
         opacity: 0;
         transform: scale(0.9) translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -431,15 +449,15 @@ main {
         gap: 0.75rem;
         text-align: center;
     }
-    
+
     main {
         padding: 1rem;
     }
-    
+
     .navigation {
         flex-wrap: wrap;
     }
-    
+
     .button-row {
         justify-content: center;
     }

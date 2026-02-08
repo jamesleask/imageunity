@@ -1,25 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ImageUnity - LoRA Training Image Processor</title>
     <meta name="description" content="Process images for LoRA training with scaling and cropping tools">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
     <header>
         <h1>ImageUnity</h1>
         <div class="status">
             {% if trash_enabled %}
-            <span class="badge badge-enabled">Trash: enabled</span>
+            <span class="badge badge-enabled" title="Trash: enabled">
+                <i data-lucide="trash-2"></i>
+            </span>
             {% else %}
-            <span class="badge badge-disabled">Trash: disabled</span>
+            <span class="badge badge-disabled" title="Trash: disabled">
+                <i data-lucide="trash-2"></i>
+            </span>
             {% endif %}
+
             {% if copy_mode %}
-            <span class="badge badge-copy">Copy Mode</span>
+            <span class="badge badge-copy" title="Copy Mode">
+                <i data-lucide="copy"></i>
+            </span>
             {% else %}
-            <span class="badge badge-destructive">Destructive Mode</span>
+            <span class="badge badge-destructive" title="Destructive Mode">
+                <i data-lucide="zap"></i>
+            </span>
             {% endif %}
         </div>
     </header>
@@ -99,4 +111,5 @@
 
     <script src="/static/js/app.js"></script>
 </body>
+
 </html>

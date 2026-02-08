@@ -52,6 +52,11 @@ async function init() {
     await loadImageList();
     setupEventListeners();
 
+    // Initialize Lucide icons
+    if (window.lucide) {
+        lucide.createIcons();
+    }
+
     if (state.images.length > 0) {
         displayImage(0);
     } else {
