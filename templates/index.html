@@ -51,48 +51,50 @@
             <img id="main-image" src="" alt="Current image">
         </div>
 
-        <nav class="navigation">
-            <button id="btn-prev" class="nav-btn" title="Previous (←)">◀ Prev</button>
-            <div class="image-info">
-                <span id="image-name">Loading...</span>
-                <span id="image-counter">(0/0)</span>
-            </div>
-            <button id="btn-next" class="nav-btn" title="Next (→)">Next ▶</button>
-        </nav>
+        <div class="dashboard">
+            <div class="dash-row">
+                <button id="btn-prev" class="nav-btn" title="Previous (←)">◀</button>
 
-        <div class="info-bar">
-            <span id="dimensions">Dimensions: -- × --</span>
+                <div class="image-display-info">
+                    <span id="image-name">Loading...</span>
+                    <span id="image-counter">(0/0)</span>
+                    <span id="dimensions">-- × --</span>
+                </div>
+
+                <button id="btn-next" class="nav-btn" title="Next (→)">▶</button>
+            </div>
+
+            <div class="dash-row controls">
+                <div class="control-section">
+                    <div class="button-group">
+                        <button class="scale-btn" data-width="512" data-height="512">512²</button>
+                        <button class="scale-btn" data-width="768" data-height="768">768²</button>
+                        <button class="scale-btn" data-width="1024" data-height="1024">1024²</button>
+                    </div>
+                </div>
+
+                <div class="control-separator"></div>
+
+                <div class="control-section">
+                    <div class="button-group">
+                        <button class="crop-btn" data-ratio="1:1">1:1</button>
+                        <button class="crop-btn" data-ratio="2:3">2:3</button>
+                        <button class="crop-btn" data-ratio="3:2">3:2</button>
+                        <button class="crop-btn" data-ratio="9:16">9:16</button>
+                        <button class="crop-btn" data-ratio="16:9">16:9</button>
+                    </div>
+                    <button id="btn-apply-crop" class="action-btn hidden">Apply</button>
+                    <button id="btn-cancel-crop" class="cancel-btn hidden">✕</button>
+                </div>
+
+                {% if trash_enabled %}
+                <div class="control-separator"></div>
+                <button id="btn-trash" class="danger-btn circular" title="Move to Trash">
+                    <i data-lucide="trash-2"></i>
+                </button>
+                {% endif %}
+            </div>
         </div>
-
-        <section class="controls">
-            <div class="control-group">
-                <h3>Scale</h3>
-                <div class="button-row">
-                    <button class="scale-btn" data-width="512" data-height="512">512²</button>
-                    <button class="scale-btn" data-width="768" data-height="768">768²</button>
-                    <button class="scale-btn" data-width="1024" data-height="1024">1024²</button>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <h3>Crop</h3>
-                <div class="button-row">
-                    <button class="crop-btn" data-ratio="1:1" title="Press 1">1:1</button>
-                    <button class="crop-btn" data-ratio="2:3" title="Press 2">2:3</button>
-                    <button class="crop-btn" data-ratio="3:2" title="Press 3">3:2</button>
-                    <button class="crop-btn" data-ratio="9:16" title="Press 4">9:16</button>
-                    <button class="crop-btn" data-ratio="16:9" title="Press 5">16:9</button>
-                </div>
-                <button id="btn-apply-crop" class="action-btn hidden">Apply Crop</button>
-                <button id="btn-cancel-crop" class="cancel-btn hidden">Cancel</button>
-            </div>
-
-            {% if trash_enabled %}
-            <div class="control-group danger-zone">
-                <button id="btn-trash" class="danger-btn" title="Delete">🗑️ Move to Trash</button>
-            </div>
-            {% endif %}
-        </section>
     </main>
 
     <div id="toast" class="toast hidden"></div>
