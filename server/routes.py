@@ -23,6 +23,7 @@ def index():
     """Serve the main HTML page."""
     return render_template(
         'index.html',
+        folder_name=os.path.basename(current_app.config['IMAGE_DIR']),
         trash_enabled=current_app.config['TRASH_DIR'] is not None,
         copy_mode=current_app.config['COPY_MODE']
     )

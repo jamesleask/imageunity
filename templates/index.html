@@ -12,7 +12,10 @@
 
 <body>
     <header>
-        <h1>ImageUnity</h1>
+        <div class="logo-area">
+            <h1>ImageUnity</h1>
+            <span class="folder-path">{{ folder_name }}</span>
+        </div>
         <div class="status">
             {% if trash_enabled %}
             <span class="badge badge-enabled" title="Trash: enabled">
