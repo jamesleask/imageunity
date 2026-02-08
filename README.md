@@ -1,21 +1,28 @@
 # ImageUnity
 
-A lightweight Python web application for preparing images for LoRA training.
+A lightweight Python web application for preparing images for LoRA training. Features sequential cropping, scaling, and image captioning in a streamlined, dark-themed UI.
+
+![ImageUnity Preview](/docs/screenshot.png)
 
 ## Features
 
-- 🖼️ Browse and navigate through images in a folder
-- 📐 Scale images to common training sizes (512², 768², 1024²)
-- ✂️ Crop images to common aspect ratios with visual selection
-- 🗑️ Move unwanted images to a trash folder
-- 🔒 Runs locally on your machine
+- 🖼️ **Browse & Navigate**: Quickly scroll through your dataset.
+- 📐 **Smart Scaling**: Auto-detects image aspect ratios and suggests relevant resolutions.
+- ✂️ **Sequential Processing**: Apply a crop and then scale to multiple resolutions in one click.
+- 📝 **ML Captioning**: Edit and save `.txt` captions directly next to your images.
+- 🗑️ **Smart Trash**: Moving an image to trash automatically brings its caption along.
+- 🔒 **Privacy Focused**: Runs entirely locally on your machine.
 
 ## Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/james/imageunity.git
+git clone https://github.com/jamesleask/imageunity.git
 cd imageunity
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -25,7 +32,10 @@ pip install -r requirements.txt
 
 ### Basic Usage
 
+Make sure your virtual environment is activated:
+
 ```bash
+source .venv/bin/activate
 python app.py --dir /path/to/your/images
 ```
 
