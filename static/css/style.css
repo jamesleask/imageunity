@@ -283,6 +283,20 @@ main {
     border: 3px solid var(--accent);
     background: transparent;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    cursor: move;
+}
+
+.resize-handle {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border: 2px solid white;
+    border-radius: 50%;
+    cursor: nwse-resize;
+    z-index: 10;
 }
 
 /* Dashboard specific tweaks */

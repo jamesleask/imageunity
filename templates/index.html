@@ -46,7 +46,9 @@
 
         <div id="image-container" class="image-container">
             <div id="crop-overlay" class="crop-overlay hidden">
-                <div id="crop-region" class="crop-region"></div>
+                <div id="crop-region" class="crop-region">
+                    <div class="resize-handle"></div>
+                </div>
             </div>
             <img id="main-image" src="" alt="Current image">
         </div>
@@ -66,7 +68,7 @@
 
             <div class="dash-row controls">
                 <div class="control-section">
-                    <div class="button-group">
+                    <div id="scale-buttons" class="button-group">
                         <button class="scale-btn" data-width="512" data-height="512">512²</button>
                         <button class="scale-btn" data-width="768" data-height="768">768²</button>
                         <button class="scale-btn" data-width="1024" data-height="1024">1024²</button>

@@ -11,6 +11,7 @@ const state = {
     cropRegion: { x: 0, y: 0, width: 0, height: 0 },
     imageInfo: null,
     isDragging: false,
+    isResizing: false,
     dragStart: { x: 0, y: 0 }
 };
 
@@ -35,16 +36,18 @@ const elements = {
     modalTitle: document.getElementById('modal-title'),
     modalMessage: document.getElementById('modal-message'),
     modalBtnCancel: document.getElementById('modal-btn-cancel'),
-    modalBtnConfirm: document.getElementById('modal-btn-confirm')
+    modalBtnConfirm: document.getElementById('modal-btn-confirm'),
+    scaleButtons: document.getElementById('scale-buttons'),
+    resizeHandle: document.querySelector('.resize-handle')
 };
 
 // Aspect ratio presets (width:height)
 const RATIOS = {
-    '1:1': { w: 1, h: 1 },
-    '2:3': { w: 2, h: 3 },
-    '3:2': { w: 3, h: 2 },
-    '9:16': { w: 9, h: 16 },
-    '16:9': { w: 16, h: 9 }
+    '1:1': { w: 1, h: 1, targets: [512, 768, 1024] },
+    '2:3': { w: 2, h: 3, targets: [[512, 768], [682, 1024], [853, 1280]] },
+    '3:2': { w: 3, h: 2, targets: [[768, 512], [1024, 682], [1280, 853]] },
+    '9:16': { w: 9, h: 16, targets: [[512, 910], [576, 1024], [720, 1280]] },
+    '16:9': { w: 16, h: 9, targets: [[910, 512], [1024, 576], [1280, 720]] }
 };
 
 // Initialize application
@@ -199,6 +202,38 @@ function startCrop(ratioKey) {
     document.querySelectorAll('.crop-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.ratio === ratioKey);
     });
+
+    updateScaleButtons();
+}
+
+function updateScaleButtons() {
+    elements.scaleButtons.innerHTML = '';
+    const ratio = state.cropRatio;
+
+    if (!ratio) {
+        // Default square buttons
+        [512, 768, 1024].forEach(size => {
+            const btn = document.createElement('button');
+            btn.className = 'scale-btn';
+            btn.dataset.width = size;
+            btn.dataset.height = size;
+            btn.textContent = `${size}²`;
+            btn.onclick = () => scaleImage(size, size);
+            elements.scaleButtons.appendChild(btn);
+        });
+    } else {
+        // Ratio-specific buttons
+        ratio.targets.forEach(target => {
+            const [w, h] = Array.isArray(target) ? target : [target, target];
+            const btn = document.createElement('button');
+            btn.className = 'scale-btn';
+            btn.dataset.width = w;
+            btn.dataset.height = h;
+            btn.textContent = `${w}×${h}`;
+            btn.onclick = () => scaleImage(w, h);
+            elements.scaleButtons.appendChild(btn);
+        });
+    }
 }
 
 function updateCropRegionDisplay() {
@@ -216,6 +251,7 @@ function exitCropMode() {
     elements.btnApplyCrop.classList.add('hidden');
     elements.btnCancelCrop.classList.add('hidden');
     document.querySelectorAll('.crop-btn').forEach(btn => btn.classList.remove('active'));
+    updateScaleButtons();
 }
 
 async function applyCrop() {
@@ -407,6 +443,16 @@ function setupEventListeners() {
         elements.btnTrash.addEventListener('click', trashImage);
     }
 
+    // Resize handle
+    elements.resizeHandle.addEventListener('mousedown', (e) => {
+        state.isResizing = true;
+        const clientX = e.clientX || e.touches?.[0]?.clientX;
+        const clientY = e.clientY || e.touches?.[0]?.clientY;
+        state.dragStart = { x: clientX, y: clientY };
+        e.stopPropagation();
+        e.preventDefault();
+    });
+
     // Crop drag handling
     elements.cropOverlay.addEventListener('mousedown', startDrag);
     document.addEventListener('mousemove', drag);
@@ -432,7 +478,7 @@ function startDrag(e) {
 }
 
 function drag(e) {
-    if (!state.isDragging) return;
+    if (!state.isDragging && !state.isResizing) return;
 
     const clientX = e.clientX || e.touches?.[0]?.clientX;
     const clientY = e.clientY || e.touches?.[0]?.clientY;
@@ -446,16 +492,39 @@ function drag(e) {
     const offsetX = imgRect.left - containerRect.left;
     const offsetY = imgRect.top - containerRect.top;
 
-    // Calculate new position with constraints
-    let newX = state.cropRegion.x + deltaX;
-    let newY = state.cropRegion.y + deltaY;
+    if (state.isResizing) {
+        // Handle resizing while maintaining aspect ratio
+        const ratio = state.cropRatio.w / state.cropRatio.h;
+        let newWidth = state.cropRegion.width + deltaX;
+        let newHeight = newWidth / ratio;
 
-    // Constrain to image bounds
-    newX = Math.max(offsetX, Math.min(newX, offsetX + imgRect.width - state.cropRegion.width));
-    newY = Math.max(offsetY, Math.min(newY, offsetY + imgRect.height - state.cropRegion.height));
+        // Constrain to image bounds
+        if (state.cropRegion.x + newWidth > offsetX + imgRect.width) {
+            newWidth = (offsetX + imgRect.width) - state.cropRegion.x;
+            newHeight = newWidth / ratio;
+        }
+        if (state.cropRegion.y + newHeight > offsetY + imgRect.height) {
+            newHeight = (offsetY + imgRect.height) - state.cropRegion.y;
+            newWidth = newHeight * ratio;
+        }
 
-    state.cropRegion.x = newX;
-    state.cropRegion.y = newY;
+        // Minimum size constraint
+        if (newWidth >= 50 && newHeight >= 50) {
+            state.cropRegion.width = newWidth;
+            state.cropRegion.height = newHeight;
+        }
+    } else {
+        // Handle moving
+        let newX = state.cropRegion.x + deltaX;
+        let newY = state.cropRegion.y + deltaY;
+
+        // Constrain to image bounds
+        newX = Math.max(offsetX, Math.min(newX, offsetX + imgRect.width - state.cropRegion.width));
+        newY = Math.max(offsetY, Math.min(newY, offsetY + imgRect.height - state.cropRegion.height));
+
+        state.cropRegion.x = newX;
+        state.cropRegion.y = newY;
+    }
 
     state.dragStart = { x: clientX, y: clientY };
     updateCropRegionDisplay();
@@ -463,6 +532,7 @@ function drag(e) {
 
 function endDrag() {
     state.isDragging = false;
+    state.isResizing = false;
 }
 
 function handleTouchStart(e) {
