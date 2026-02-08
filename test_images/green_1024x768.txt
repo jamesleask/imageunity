@@ -1,0 +1,1 @@
+A beautiful green 1024x1024 square image for ML training.

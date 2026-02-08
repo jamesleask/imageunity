@@ -95,6 +95,43 @@ class ImageProcessor:
                 }
         except Exception:
             return None
+
+    def get_caption(self, filename: str) -> str:
+        """
+        Get existing caption for an image.
+        
+        Args:
+            filename: The image filename
+            
+        Returns:
+            Caption text, or empty string if no caption exists
+        """
+        caption_path = self.image_dir / f"{Path(filename).stem}.txt"
+        if caption_path.exists():
+            try:
+                return caption_path.read_text(encoding='utf-8').strip()
+            except Exception as e:
+                print(f"Error reading caption: {e}")
+        return ""
+
+    def save_caption(self, filename: str, text: str) -> bool:
+        """
+        Save or update a caption for an image.
+        
+        Args:
+            filename: The image filename
+            text: The caption text
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        caption_path = self.image_dir / f"{Path(filename).stem}.txt"
+        try:
+            caption_path.write_text(text, encoding='utf-8')
+            return True
+        except Exception as e:
+            print(f"Error saving caption: {e}")
+            return False
     
     def _apply_exif_orientation(self, img: Image.Image) -> Image.Image:
         """Apply EXIF orientation to image."""
@@ -246,6 +283,16 @@ class ImageProcessor:
                     counter += 1
             
             shutil.move(str(image_path), str(dest))
+            
+            # Also move caption file if it exists
+            caption_path = self.image_dir / f"{Path(filename).stem}.txt"
+            if caption_path.exists():
+                caption_dest = self.trash_dir / f"{dest.stem}.txt"
+                try:
+                    shutil.move(str(caption_path), str(caption_dest))
+                except Exception as e:
+                    print(f"Error moving caption to trash: {e}")
+
             return True
         except Exception as e:
             print(f"Error moving to trash: {e}")

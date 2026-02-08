@@ -59,6 +59,9 @@
 
                 <div class="image-display-info">
                     <span id="image-name">Loading...</span>
+                    <button id="btn-edit-caption" class="icon-btn small" title="Edit Caption">
+                        <i data-lucide="edit-2"></i>
+                    </button>
                     <span id="image-counter">(0/0)</span>
                     <span id="dimensions">-- × --</span>
                 </div>
@@ -116,6 +119,19 @@
             <div class="modal-buttons">
                 <button id="modal-btn-cancel" class="cancel-btn">Cancel</button>
                 <button id="modal-btn-confirm" class="danger-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Caption Modal -->
+    <div id="caption-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <h3>Edit Caption</h3>
+            <p id="caption-filename" class="modal-filename"></p>
+            <textarea id="caption-text" class="caption-editor" placeholder="Enter image caption here..."></textarea>
+            <div class="modal-actions">
+                <button id="caption-btn-cancel" class="cancel-btn">Cancel</button>
+                <button id="caption-btn-save" class="action-btn">Save Caption</button>
             </div>
         </div>
     </div>

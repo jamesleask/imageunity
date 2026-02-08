@@ -137,3 +137,32 @@ def trash_image(filename):
         return jsonify({'error': 'Failed to move to trash'}), 500
     
     return jsonify({'success': True})
+
+
+@bp.route('/api/image/<filename>/caption')
+def get_caption(filename):
+    """Get image caption."""
+    processor = get_processor()
+    if not processor.is_valid_filename(filename):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    caption = processor.get_caption(filename)
+    return jsonify({'caption': caption})
+
+
+@bp.route('/api/image/<filename>/caption', methods=['POST'])
+def save_caption(filename):
+    """Save image caption."""
+    processor = get_processor()
+    if not processor.is_valid_filename(filename):
+        return jsonify({'error': 'Invalid filename'}), 400
+    
+    data = request.get_json()
+    if not data or 'caption' not in data:
+        return jsonify({'error': 'Missing caption text'}), 400
+    
+    success = processor.save_caption(filename, data['caption'])
+    if not success:
+        return jsonify({'error': 'Failed to save caption'}), 500
+    
+    return jsonify({'success': True})

@@ -42,7 +42,13 @@ const elements = {
     resizeHandle: document.querySelector('.resize-handle'),
     unifiedBtnArea: document.getElementById('unified-actions'),
     btnApplyAll: document.getElementById('btn-apply-all'),
-    btnCancelAll: document.getElementById('btn-cancel-all')
+    btnCancelAll: document.getElementById('btn-cancel-all'),
+    btnEditCaption: document.getElementById('btn-edit-caption'),
+    captionModal: document.getElementById('caption-modal'),
+    captionFilename: document.getElementById('caption-filename'),
+    captionText: document.getElementById('caption-text'),
+    captionBtnCancel: document.getElementById('caption-btn-cancel'),
+    captionBtnSave: document.getElementById('caption-btn-save')
 };
 
 // Aspect ratio presets (width:height)
@@ -256,6 +262,57 @@ function clearScaleSelection() {
 function updateActionUI() {
     const hasActiveStates = state.cropMode || state.selectedScales.length > 0;
     elements.unifiedBtnArea.classList.toggle('hidden', !hasActiveStates);
+}
+
+// Captioning
+async function openCaptionEditor() {
+    const filename = state.images[state.currentIndex];
+    if (!filename) return;
+
+    elements.captionFilename.textContent = filename;
+    elements.captionText.value = 'Loading...';
+    elements.captionModal.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/caption`);
+        const result = await response.json();
+        elements.captionText.value = result.caption || '';
+        elements.captionText.focus();
+    } catch (error) {
+        console.error('Fetch caption error:', error);
+        elements.captionText.value = '';
+        showToast('Failed to load caption', 'error');
+    }
+}
+
+function closeCaptionEditor() {
+    elements.captionModal.classList.add('hidden');
+}
+
+async function saveCaption() {
+    const filename = state.images[state.currentIndex];
+    const text = elements.captionText.value.trim();
+
+    showLoading(true);
+    try {
+        const response = await fetch(`/api/image/${encodeURIComponent(filename)}/caption`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ caption: text })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast('Caption saved', 'success');
+            closeCaptionEditor();
+        } else {
+            showToast(result.error || 'Failed to save', 'error');
+        }
+    } catch (error) {
+        console.error('Save caption error:', error);
+        showToast('Failed to save caption', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Crop functions
@@ -481,6 +538,11 @@ function setupEventListeners() {
     // Navigation
     elements.btnPrev.addEventListener('click', navigatePrev);
     elements.btnNext.addEventListener('click', navigateNext);
+
+    // Captioning
+    elements.btnEditCaption.addEventListener('click', openCaptionEditor);
+    elements.captionBtnCancel.addEventListener('click', closeCaptionEditor);
+    elements.captionBtnSave.addEventListener('click', saveCaption);
 
     // Crop buttons
     document.querySelectorAll('.crop-btn').forEach(btn => {
