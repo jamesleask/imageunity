@@ -378,7 +378,7 @@ function updateScaleButtons() {
             btn.className = 'scale-btn';
             btn.dataset.width = size;
             btn.dataset.height = size;
-            btn.textContent = `${size}²`;
+            btn.textContent = `${size}x${size}`;
             btn.onclick = () => toggleScale(size, size, btn);
             elements.scaleButtons.appendChild(btn);
         });
@@ -390,7 +390,7 @@ function updateScaleButtons() {
             btn.className = 'scale-btn';
             btn.dataset.width = w;
             btn.dataset.height = h;
-            btn.textContent = `${w}×${h}`;
+            btn.textContent = `${w}x${h}`;
             btn.onclick = () => toggleScale(w, h, btn);
             elements.scaleButtons.appendChild(btn);
         });
