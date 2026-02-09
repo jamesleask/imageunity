@@ -121,11 +121,15 @@ async function displayImage(index) {
     exitCropMode();
     clearScaleSelection();
 
-    // Smart Ratio Detection
+    // Smart Ratio Detection & Match Highlight
+    document.querySelectorAll('.crop-btn').forEach(btn => btn.classList.remove('matched'));
     if (state.imageInfo) {
         const detectedRatio = detectImageRatio(state.imageInfo.width, state.imageInfo.height);
         if (detectedRatio) {
             state.cropRatio = RATIOS[detectedRatio];
+            // Highlight the matching crop button if no crop mode is active or if it matches current
+            const matchBtn = document.querySelector(`.crop-btn[data-ratio="${detectedRatio}"]`);
+            if (matchBtn) matchBtn.classList.add('matched');
             updateScaleButtons();
         }
     }
@@ -379,6 +383,13 @@ function updateScaleButtons() {
             btn.dataset.width = size;
             btn.dataset.height = size;
             btn.textContent = `${size}x${size}`;
+
+            // Highlight if matches current exactly
+            if (state.imageInfo && state.imageInfo.width === size && state.imageInfo.height === size) {
+                btn.classList.add('matched');
+                btn.title = "Current image matches this resolution";
+            }
+
             btn.onclick = () => toggleScale(size, size, btn);
             elements.scaleButtons.appendChild(btn);
         });
@@ -391,6 +402,13 @@ function updateScaleButtons() {
             btn.dataset.width = w;
             btn.dataset.height = h;
             btn.textContent = `${w}x${h}`;
+
+            // Highlight if matches current exactly
+            if (state.imageInfo && state.imageInfo.width === w && state.imageInfo.height === h) {
+                btn.classList.add('matched');
+                btn.title = "Current image matches this resolution";
+            }
+
             btn.onclick = () => toggleScale(w, h, btn);
             elements.scaleButtons.appendChild(btn);
         });

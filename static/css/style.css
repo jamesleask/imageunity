@@ -372,6 +372,32 @@ main {
     color: white !important;
 }
 
+.scale-btn.matched,
+.crop-btn.matched {
+    border-color: var(--success) !important;
+    background: rgba(63, 185, 80, 0.1) !important;
+    color: var(--success) !important;
+    position: relative;
+    padding-right: 1.5rem !important;
+}
+
+.scale-btn.matched::after,
+.crop-btn.matched::after {
+    content: '✓';
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.scale-btn.matched.selected,
+.crop-btn.matched.active {
+    background: var(--success) !important;
+    color: white !important;
+}
+
 .action-btn:hover {
     filter: brightness(1.1);
 }
