@@ -199,8 +199,8 @@ class ImageProcessor:
                 else:
                     output_path = image_path
                 
-                # Preserve format
-                scaled.save(output_path, quality=95)
+                # Save using helper to handle transparency
+                self._save_image(scaled, output_path, quality=95)
                 
                 return output_path.name
         except Exception as e:
@@ -246,14 +246,44 @@ class ImageProcessor:
                 else:
                     output_path = image_path
                 
-                # Save
-                cropped.save(output_path, quality=95)
+                # Save using helper to handle transparency
+                self._save_image(cropped, output_path, quality=95)
                 
                 return output_path.name
         except Exception as e:
             print(f"Error cropping image: {e}")
             return None
     
+    def _save_image(self, img: Image.Image, output_path: Path, quality: int = 95) -> None:
+        """
+        Save image with proper handling of alpha channel for JPEG.
+        
+        Args:
+            img: PIL Image object
+            output_path: Path to save the image to
+            quality: JPG quality (if applicable)
+        """
+        target_ext = output_path.suffix.lower()
+        
+        if target_ext in {'.jpg', '.jpeg'}:
+            if img.mode in ("RGBA", "P"):
+                # Convert to RGBA first to handle palette images with transparency
+                img = img.convert("RGBA")
+                # Create white background
+                new_img = Image.new("RGB", img.size, (255, 255, 255))
+                # Paste using alpha channel as mask
+                new_img.paste(img, mask=img.split()[3])
+                img = new_img
+            elif img.mode == "LA":
+                new_img = Image.new("RGB", img.size, (255, 255, 255))
+                # LA uses index 1 for alpha
+                new_img.paste(img, mask=img.split()[1])
+                img = new_img
+            elif img.mode != "RGB":
+                img = img.convert("RGB")
+                
+        img.save(output_path, quality=quality)
+
     def move_to_trash(self, filename: str) -> bool:
         """
         Move image to trash directory.
