@@ -322,6 +322,15 @@ main {
     height: 14px;
 }
 
+.icon-btn.has-caption {
+    color: var(--success);
+    background: rgba(63, 185, 80, 0.1);
+}
+
+.icon-btn.has-caption:hover {
+    background: rgba(63, 185, 80, 0.2);
+}
+
 /* Dashboard specific tweaks */
 .control-section {
     display: flex;

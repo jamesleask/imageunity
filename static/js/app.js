@@ -113,8 +113,10 @@ async function displayImage(index) {
         const info = await response.json();
         state.imageInfo = info;
         elements.dimensions.textContent = `Dimensions: ${info.width} × ${info.height}`;
+        elements.btnEditCaption.classList.toggle('has-caption', info.has_caption === true);
     } catch (error) {
         elements.dimensions.textContent = 'Dimensions: -- × --';
+        elements.btnEditCaption.classList.remove('has-caption');
     }
 
     // Exit crop/scale modes when changing images
@@ -307,6 +309,7 @@ async function saveCaption() {
         const result = await response.json();
         if (result.success) {
             showToast('Caption saved', 'success');
+            elements.btnEditCaption.classList.add('has-caption');
             closeCaptionEditor();
         } else {
             showToast(result.error || 'Failed to save', 'error');

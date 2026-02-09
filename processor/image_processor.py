@@ -86,12 +86,14 @@ class ImageProcessor:
             with Image.open(image_path) as img:
                 # Handle EXIF orientation
                 img = self._apply_exif_orientation(img)
+                caption_path = self.image_dir / f"{Path(filename).stem}.txt"
                 return {
                     'filename': filename,
                     'width': img.width,
                     'height': img.height,
                     'format': img.format or 'Unknown',
-                    'size': image_path.stat().st_size
+                    'size': image_path.stat().st_size,
+                    'has_caption': caption_path.exists()
                 }
         except Exception:
             return None
@@ -282,7 +284,18 @@ class ImageProcessor:
             elif img.mode != "RGB":
                 img = img.convert("RGB")
                 
-        img.save(output_path, quality=quality)
+        # Atomic save: save to temp file first, then replace original
+        temp_path = output_path.parent / f".tmp_{output_path.name}"
+        try:
+            img.save(temp_path, quality=quality)
+            os.replace(temp_path, output_path)
+        except Exception as e:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except Exception:
+                    pass
+            raise e
 
     def move_to_trash(self, filename: str) -> bool:
         """
